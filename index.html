@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puzzirent rezervacije</title>
+<meta name="theme-color" content="#111111">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--p:#8a6500;--p2:#e0a800;--y:#f5c118;--pl:#fff5d1;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--bg:#f4f8fa;--ok:#16a34a;--okl:#dcfce7;--bad:#dc2626;--badl:#fee2e2;--warn:#d97706;--warnl:#fef3c7;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px 40px}
+header{background:#111;color:#fff;padding:22px 16px 56px;text-align:center}
+header h1{margin:0;font-size:28px;font-weight:800;letter-spacing:1px;color:var(--y)}
+header p{margin:4px 0 0;opacity:.9}
+.card{background:var(--card);border-radius:18px;box-shadow:0 6px 24px rgba(15,23,42,.07);padding:18px;margin-top:16px}
+.wrap>.card:first-child{margin-top:-40px}
+h2{font-size:17px;margin:0 0 12px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tab{border:2px solid var(--line);background:#fff;border-radius:14px;padding:12px 8px;font:inherit;font-weight:700;cursor:pointer;color:var(--ink)}
+.tab small{display:block;font-weight:600;color:var(--mut);font-size:12px}
+.tab.on{border-color:var(--y);background:var(--pl);color:#111}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;color:var(--ink)}
+.chip.on{background:var(--y);border-color:var(--y);color:#111}
+.chip:disabled{opacity:.35;text-decoration:line-through;cursor:not-allowed}
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-h b{text-transform:capitalize}
+.nav{border:0;background:var(--pl);color:var(--p);width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer}
+.nav:disabled{opacity:.3}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.wd{font-size:12px;color:var(--mut);font-weight:700;padding:4px 0}
+.day{aspect-ratio:1;border:0;border-radius:10px;font:inherit;font-weight:700;cursor:pointer;background:var(--okl);color:#14532d}
+.day.full{background:var(--badl);color:#991b1b;cursor:not-allowed;text-decoration:line-through}
+.day.off{background:transparent;color:#cbd5e1;cursor:default}
+.day.sel{background:#111;color:var(--y)}
+.day.range{outline:2px solid var(--p);outline-offset:-2px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mut);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+label{display:block;font-weight:700;font-size:14px;margin:12px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:11px 12px;border:2px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--p2)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check{display:flex;gap:10px;align-items:center;font-weight:700;margin-top:12px}
+.check input{width:22px;height:22px}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:14px;font:inherit;font-weight:800;font-size:16px;cursor:pointer;background:var(--y);color:#111;margin-top:16px;text-align:center;text-decoration:none}
+.btn.wa{background:#25d366;color:#fff}
+.btn.vb{background:#7360f2;color:#fff}
+.incl{background:var(--okl);color:#14532d;border-radius:12px;padding:10px 12px;font-size:14px;font-weight:700;margin-top:12px;line-height:1.45}
+.btn.ghost{background:var(--pl);color:var(--p)}
+.btn:disabled{opacity:.5}
+.sum{background:var(--pl);border-radius:12px;padding:12px;margin-top:12px;font-size:14px;line-height:1.6}
+.muted{color:var(--mut);font-size:13px}
+.err{background:var(--badl);color:#991b1b;padding:10px 12px;border-radius:12px;margin-top:12px;font-weight:700}
+.demo{background:var(--warnl);color:#92400e;font-size:13px;padding:8px 12px;text-align:center;font-weight:700}
+.hide{display:none!important}
+footer{text-align:center;margin-top:24px;font-size:13px;color:var(--mut)}
+footer a,.muted a{color:var(--p)}
+.bk{border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px}
+.bk-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.badge{font-size:12px;font-weight:800;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.b-pending{background:var(--warnl);color:#92400e}.b-confirmed{background:var(--okl);color:#166534}.b-cancelled{background:var(--badl);color:#991b1b}.b-blocked{background:#e2e8f0;color:#334155}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.acts button,.acts a{border:0;border-radius:10px;padding:8px 10px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;background:var(--pl);color:var(--p)}
+.acts .g{background:var(--okl);color:#166534}.acts .r{background:var(--badl);color:#991b1b}
+.date-h{margin:18px 0 0;font-size:14px;color:var(--mut);text-transform:capitalize}
+.cat{font-size:13px;font-weight:800;letter-spacing:.6px;color:var(--p);margin:14px 0 2px;text-transform:uppercase}
+.it{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.it .pr{color:var(--mut);font-size:13px;display:block}
+.qty{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.qty button{width:34px;height:34px;border-radius:10px;border:0;background:var(--pl);font:inherit;font-weight:800;font-size:18px;cursor:pointer;color:#111}
+.qty span{min-width:18px;text-align:center;font-weight:800}
+.total{margin-top:12px;font-weight:800;font-size:16px;text-align:right}
+.ok-icon{width:64px;height:64px;border-radius:50%;background:var(--okl);color:var(--ok);display:grid;place-items:center;font-size:34px;margin:0 auto 8px}
+</style>
+</head>
+<body>
+<div id="demoBar" class="demo hide">DEMO režim: rezervacije se čuvaju samo na ovom uređaju dok se ne poveže baza</div>
+<header><h1>PUZZIRENT</h1><p id="hSub">Rezervacija termina · Prijedor</p></header>
+
+<!-- ================= KUPAC ================= -->
+<div class="wrap" id="customer">
+  <div class="card" id="stepForm">
+    <h2>1. Izaberite uslugu</h2>
+    <div class="tabs">
+      <button class="tab on" data-kind="rental">Najam mašine<small>Kärcher Puzzi + hemija</small></button>
+      <button class="tab" data-kind="cleaning">Dubinsko pranje<small>Mi dolazimo kod vas</small></button>
+    </div>
+
+    <div id="rentalOpts">
+      <label>Izaberite mašinu</label>
+      <div class="chips" id="machChips"></div>
+      <label>Trajanje najma</label>
+      <div class="chips" id="durChips"></div>
+      <p class="muted">Više od 3 dana? Cijena po dogovoru, <a id="waMore" target="_blank" rel="noopener">pišite nam na WhatsApp</a>.</p>
+      <div class="incl">✓ Uz mašinu dobijate sve potrebno za pranje: hemiju, kompletnu opremu za rad i kratko uputstvo kako se mašina koristi.</div>
+    </div>
+
+    <div id="cleanOpts" class="hide">
+      <label>Šta perete?</label>
+      <div id="items"></div>
+      <div class="total" id="itemsTotal"></div>
+    </div>
+
+    <h2 style="margin-top:18px">2. Izaberite datum</h2>
+    <div id="connErr" class="err hide" style="margin:0 0 10px"></div>
+    <div class="cal-h"><button class="nav" id="prev">‹</button><b id="calTitle"></b><button class="nav" id="next">›</button></div>
+    <div class="grid" id="cal"></div>
+    <div class="legend"><span><i style="background:var(--okl)"></i>Slobodno</span><span><i style="background:var(--badl)"></i><s>Zauzeto</s></span></div>
+
+    <div id="slotBox" class="hide">
+      <label id="slotLabel">Termin</label>
+      <div class="chips" id="slotChips"></div>
+    </div>
+
+    <div id="sumBox" class="sum hide"></div>
+
+    <div id="details" class="hide">
+      <h2 style="margin-top:18px">3. Vaši podaci</h2>
+      <label for="fName">Ime i prezime *</label><input id="fName" autocomplete="name">
+      <label for="fPhone">Telefon *</label><input id="fPhone" type="tel" autocomplete="tel" placeholder="065 ...">
+      <div id="delivWrap" class="check"><input type="checkbox" id="fDeliv"><span>Želim dostavu na adresu</span></div>
+      <div id="addrWrap" class="hide"><label for="fAddr">Adresa *</label><input id="fAddr" autocomplete="street-address"></div>
+      <label for="fNote">Napomena</label><textarea id="fNote" rows="2" placeholder="npr. ugaona garnitura i 2 tepiha"></textarea>
+      <div id="formErr" class="err hide"></div>
+      <button class="btn" id="submit">Rezerviši termin</button>
+    </div>
+  </div>
+
+  <div class="card hide" id="stepDone" style="text-align:center">
+    <div class="ok-icon">✓</div>
+    <h2>Rezervacija je zaprimljena!</h2>
+    <div class="sum" id="doneSum" style="text-align:left"></div>
+    <p class="muted">Pošaljite nam poruku na WhatsApp ili Viber da vam termin brže potvrdimo.</p>
+    <a class="btn wa" id="doneWa" target="_blank" rel="noopener">Pošalji na WhatsApp</a>
+    <a class="btn vb" id="doneVb">Pošalji na Viber</a>
+    <p class="muted hide" id="vbNote">Poruka je kopirana. Ako se ne pojavi sama u Viberu, samo je zalijepite i pošaljite.</p>
+    <button class="btn ghost" id="again">Nova rezervacija</button>
+  </div>
+
+  <footer>Pitanja? <a id="footWa" target="_blank" rel="noopener">WhatsApp</a> · <a id="footVb">Viber</a> · <a href="tel:+38765402036">065 402 036</a><br><br>© <span id="yr"></span> Zorica Kolundžija. Sva prava zadržana.<br><br><a href="#admin">Prijava za vlasnika</a></footer>
+</div>
+
+<!-- ================= ADMIN ================= -->
+<div class="wrap hide" id="admin">
+  <div class="card" id="loginCard">
+    <h2>Prijava za vlasnika</h2>
+    <label for="aEmail">Email</label><input id="aEmail" type="email" autocomplete="username">
+    <label for="aPass">Šifra</label><input id="aPass" type="password" autocomplete="current-password">
+    <p class="muted demoOnly hide">U demo režimu radi bilo koji email i šifra.</p>
+    <div id="loginErr" class="err hide"></div>
+    <button class="btn" id="loginBtn">Prijavi se</button>
+    <a class="btn ghost" href="#">← Nazad na rezervacije</a>
+  </div>
+
+  <div id="panel" class="hide">
+    <div class="card">
+      <h2>Dodaj zauzet termin</h2>
+      <p class="muted" style="margin-top:-6px">Za posao koji si dogovorila telefonom ili kad mašina nije dostupna.</p>
+      <label for="blKind">Šta je zauzeto</label>
+      <select id="blKind"><option value="cleaning">Moje dubinsko pranje</option><option value="rental">Mašina (izdata / na servisu)</option></select>
+      <label for="blDate">Datum</label><input id="blDate" type="date">
+      <div id="blCleaning"><label for="blSlot">Termin</label><select id="blSlot"></select></div>
+      <div id="blRental" class="hide row">
+        <div><label for="blDays">Broj dana</label><input id="blDays" type="number" min="1" max="30" value="1"></div>
+        <div><label for="blMach">Mašina</label><select id="blMach"></select></div>
+      </div>
+      <label for="blNote">Opis (npr. ime klijenta, adresa)</label><input id="blNote">
+      <div id="blErr" class="err hide"></div>
+      <button class="btn" id="blBtn">Sačuvaj kao zauzeto</button>
+    </div>
+
+    <div class="card">
+      <div class="cal-h"><h2 style="margin:0">Rezervacije</h2><button class="nav" id="refresh" title="Osvježi">↻</button></div>
+      <div class="tabs" style="margin-top:8px">
+        <button class="tab on" data-f="all">Nadolazeće</button>
+        <button class="tab" data-f="pending">Na čekanju <span id="pendCount"></span></button>
+      </div>
+      <div id="list"></div>
+    </div>
+    <button class="btn ghost" id="logout">Odjava</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   PODEŠAVANJA: ovdje se mijenja sve što treba
+   ========================================================= */
+const CONFIG = {
+  SUPABASE_URL: 'https://yzgmsldkkrdzkavzzpui.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_tXWp6-q4htbBrtezQgxUDA_qVJNWEbI',   // "anon public" ključ iz Supabase > Project Settings > API
+  WHATSAPP: '38765402036', // broj bez + i razmaka
+  VIBER: '38765402036',    // broj bez + i razmaka
+  MACHINE_LIST: [ {id:'8/1', name:'Puzzi 8/1'}, {id:'10/1', name:'Puzzi 10/1'} ],
+  RENTAL: [ {days:1,label:'24h',price:50}, {days:2,label:'48h',price:80}, {days:3,label:'72h',price:130} ],
+  PICKUP_TIMES: ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'],
+  CLEANING_SLOTS: ['08:00','11:00','14:00','17:00'],
+  // Cjenovnik dubinskog pranja: [šifra, naziv, cijena u KM]; cijena 0 = po dogovoru
+  CLEANING_PRICES: [
+    { cat:'Madraci', items:[ ['m1','Madrac jednostrano',40], ['m2','Madrac obostrano',65], ['m3','Francuski madrac',80], ['m4','Dječiji madrac',25] ] },
+    { cat:'Namještaj', items:[ ['n1','Ugaona garnitura',120], ['n2','Trosjed',65], ['n3','Dvosjed',50], ['n4','Fotelja',25], ['n5','Stolica',10] ] },
+    { cat:'Automobil', items:[ ['a1','Sjedišta',100], ['a2','Sjedišta + tepisi',130], ['a3','Komplet',200] ] }
+  ],
+  DAYS_AHEAD: 60,          // koliko dana unaprijed se može rezervisati
+  CLOSED_WEEKDAYS: []      // dani kad ne radiš: 0=ned, 1=pon ... 6=sub, npr. [0]
+};
+/* ========================================================= */
+
+const DEMO = !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY;
+const sb = DEMO ? null : supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- datumi ---------- */
+const pad = n => String(n).padStart(2,'0');
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const toD = s => new Date(s + 'T00:00:00Z');
+const fromD = d => d.toISOString().slice(0,10);
+const addDays = (s,n) => { const d = toD(s); d.setUTCDate(d.getUTCDate()+n); return fromD(d); };
+const WD = ['ned','pon','uto','sri','čet','pet','sub'];
+const MONTHS = ['januar','februar','mart','april','maj','jun','jul','avgust','septembar','oktobar','novembar','decembar'];
+const fmt = s => { const d = toD(s); return `${WD[d.getUTCDay()]} ${pad(d.getUTCDate())}.${pad(d.getUTCMonth()+1)}.${d.getUTCFullYear()}.`; };
+const fmtLong = s => { const d = toD(s); return `${['nedjelja','ponedjeljak','utorak','srijeda','četvrtak','petak','subota'][d.getUTCDay()]}, ${d.getUTCDate()}. ${MONTHS[d.getUTCMonth()]}`; };
+
+/* ---------- DEMO baza (na uređaju) ---------- */
+const demoDb = {
+  key: 'puzzirent_demo_v1', mem: null,
+  load(){ if (this.mem) return this.mem;
+    try { const r = localStorage.getItem(this.key); if (r) return this.mem = JSON.parse(r); } catch(e){}
+    const t = todayStr();
+    this.mem = [
+      {id:'d1',kind:'rental',start_date:addDays(t,3),end_date:addDays(t,4),slot:'10:00',machine:'8/1',machines:1,name:'Marko P.',phone:'065 111 222',status:'confirmed',created_at:new Date().toISOString()},
+      {id:'d2',kind:'rental',start_date:addDays(t,2),end_date:addDays(t,4),slot:'17:00',machine:'10/1',machines:1,name:'Jelena S.',phone:'066 333 444',delivery:true,address:'Kozarska 5',status:'pending',created_at:new Date().toISOString()},
+      {id:'d3',kind:'cleaning',start_date:addDays(t,1),end_date:addDays(t,2),slot:'11:00',machines:1,name:'Ugaona garnitura – Ljubija',status:'blocked',created_at:new Date().toISOString()}
+    ];
+    this.save(); return this.mem; },
+  save(){ try { localStorage.setItem(this.key, JSON.stringify(this.mem)); } catch(e){} }
+};
+
+/* ---------- API ---------- */
+const api = {
+  async getBusy(from, to){
+    if (DEMO) return demoDb.load().filter(b => b.status !== 'cancelled' && b.start_date < to && b.end_date > from);
+    const { data, error } = await sb.rpc('get_busy', { p_from: from, p_to: to });
+    if (error) throw error; return data || [];
+  },
+  async createBooking(b){
+    if (DEMO){
+      const all = demoDb.load();
+      if (b.kind === 'rental' ? !rentalFits(all.filter(x=>x.status!=='cancelled'), b.machine, b.start, b.days) : !cleaningFree(all.filter(x=>x.status!=='cancelled'), b.start).includes(b.slot))
+        throw new Error('Termin je upravo zauzet. Izaberite drugi.');
+      all.push({id:'d'+Date.now(),kind:b.kind,machine:b.machine,start_date:b.start,end_date:addDays(b.start,b.kind==='rental'?b.days:1),slot:b.slot,machines:1,name:b.name,phone:b.phone,address:b.address,delivery:b.delivery,note:b.note,status:'pending',created_at:new Date().toISOString()});
+      demoDb.save(); return;
+    }
+    const { error } = await sb.rpc('create_booking', { p_kind:b.kind, p_machine:b.machine, p_start:b.start, p_days:b.days, p_slot:b.slot, p_name:b.name, p_phone:b.phone, p_address:b.address, p_delivery:b.delivery, p_note:b.note });
+    if (error) throw new Error(error.message);
+  },
+  async signIn(email, pass){
+    if (DEMO) return true;
+    const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw new Error('Pogrešan email ili šifra.'); return true;
+  },
+  async session(){ if (DEMO) return sessionStorageGet('demoAdmin'); const { data } = await sb.auth.getSession(); return !!data.session; },
+  async signOut(){ if (DEMO) { sessionStorageSet('demoAdmin',''); return; } await sb.auth.signOut(); },
+  async list(){
+    const from = addDays(todayStr(), -1);
+    if (DEMO) return demoDb.load().filter(b => b.end_date > from).sort(sortB);
+    const { data, error } = await sb.from('bookings').select('*').gt('end_date', from).order('start_date').order('slot');
+    if (error) throw error; return data || [];
+  },
+  async setStatus(id, status){
+    if (DEMO){ const b = demoDb.load().find(x=>x.id===id); if (b) b.status = status; demoDb.save(); return; }
+    const { error } = await sb.from('bookings').update({ status }).eq('id', id); if (error) throw error;
+  },
+  async remove(id){
+    if (DEMO){ demoDb.mem = demoDb.load().filter(x=>x.id!==id); demoDb.save(); return; }
+    const { error } = await sb.from('bookings').delete().eq('id', id); if (error) throw error;
+  },
+  async addBlock(b){
+    if (DEMO){ demoDb.load().push({...b,id:'d'+Date.now(),created_at:new Date().toISOString()}); demoDb.save(); return; }
+    const { error } = await sb.from('bookings').insert(b); if (error) throw error;
+  }
+};
+function sessionStorageGet(k){ try { return sessionStorage.getItem(k)==='1'; } catch(e){ return !!window['_'+k]; } }
+function sessionStorageSet(k,v){ try { sessionStorage.setItem(k,v); } catch(e){ window['_'+k]=v; } }
+const sortB = (a,b) => (a.start_date+(a.slot||'')).localeCompare(b.start_date+(b.slot||''));
+
+/* ---------- dostupnost ---------- */
+const machName = id => id==='*' || !id ? 'Obje mašine' : (CONFIG.MACHINE_LIST.find(m=>m.id===id)||{name:id}).name;
+const machineBusy = (busy, m, d) => busy.some(b => b.kind==='rental' && b.start_date <= d && b.end_date > d && (!b.machine || b.machine==='*' || b.machine===m));
+const rentalFits = (busy, m, start, days) => { for (let i=0;i<days;i++) if (machineBusy(busy, m, addDays(start,i))) return false; return true; };
+function cleaningFree(busy, d){
+  const taken = busy.filter(b => b.kind==='cleaning' && b.start_date===d);
+  if (taken.some(b => b.slot==='*')) return [];
+  let slots = CONFIG.CLEANING_SLOTS.filter(s => !taken.some(b => b.slot===s));
+  if (d === todayStr()) { const h = new Date().getHours(); slots = slots.filter(s => parseInt(s) > h + 1); }
+  return slots;
+}
+
+/* ================= KUPAC ================= */
+const st = { kind:'rental', days:1, date:null, slot:null, month:null, busy:[], items:{}, machine: CONFIG.MACHINE_LIST[0].id };
+const allItems = () => CONFIG.CLEANING_PRICES.flatMap(c => c.items.map(([id,name,price]) => ({id,name,price})));
+const picked = () => allItems().filter(i => st.items[i.id] > 0);
+const itemsText = () => picked().map(i => `${i.name} ×${st.items[i.id]}`).join(', ');
+function priceText(){
+  const p = picked(), sum = p.reduce((s,i)=>s+i.price*st.items[i.id],0), deal = p.some(i=>!i.price);
+  return sum ? `${sum} KM${deal?' + dio po dogovoru':''}` : (deal ? 'po dogovoru' : '0 KM');
+}
+function renderItems(){
+  $('#items').innerHTML = CONFIG.CLEANING_PRICES.map(c => `<div class="cat">${esc(c.cat)}</div>` + c.items.map(([id,name,price]) => {
+    const q = st.items[id]||0;
+    return `<div class="it"><div><b>${esc(name)}</b><span class="pr">${price?price+' KM':'cijena po dogovoru'}</span></div><div class="qty"><button data-i="${id}" data-d="-1" aria-label="manje">−</button><span>${q}</span><button data-i="${id}" data-d="1" aria-label="više">+</button></div></div>`;
+  }).join('')).join('');
+  $('#itemsTotal').textContent = picked().length ? `Ukupno: ${priceText()}` : '';
+}
+const lastDay = () => addDays(todayStr(), CONFIG.DAYS_AHEAD);
+let lastMsg = '';
+const vbLink = txt => `viber://chat?number=%2B${CONFIG.VIBER}` + (txt ? `&draft=${encodeURIComponent(txt)}` : '');
+const waLink = txt => `https://wa.me/${CONFIG.WHATSAPP}?text=${encodeURIComponent(txt)}`;
+
+function dayState(d){
+  if (d < todayStr() || d > lastDay() || CONFIG.CLOSED_WEEKDAYS.includes(toD(d).getUTCDay())) return 'off';
+  if (st.kind === 'rental') return rentalFits(st.busy, st.machine, d, st.days) ? 'free' : 'full';
+  return cleaningFree(st.busy, d).length ? 'free' : 'full';
+}
+
+function renderCal(){
+  const m = toD(st.month), y = m.getUTCFullYear(), mo = m.getUTCMonth();
+  $('#calTitle').textContent = `${MONTHS[mo]} ${y}`;
+  const first = fromD(new Date(Date.UTC(y,mo,1)));
+  const offset = (toD(first).getUTCDay()+6)%7;
+  const dim = new Date(Date.UTC(y,mo+1,0)).getUTCDate();
+  let h = ['Pon','Uto','Sri','Čet','Pet','Sub','Ned'].map(w=>`<div class="wd">${w}</div>`).join('');
+  for (let i=0;i<offset;i++) h += '<div></div>';
+  const rangeEnd = st.date && st.kind==='rental' ? addDays(st.date, st.days) : null;
+  for (let i=1;i<=dim;i++){
+    const d = fromD(new Date(Date.UTC(y,mo,i)));
+    const s = dayState(d);
+    let cls = 'day ' + (s==='free' ? '' : s);
+    if (d === st.date) cls = 'day sel';
+    else if (rangeEnd && d > st.date && d < rangeEnd) cls += ' range';
+    h += `<button class="${cls}" data-d="${d}" ${s!=='free'?'disabled':''}>${i}</button>`;
+  }
+  $('#cal').innerHTML = h;
+  const cur = todayStr().slice(0,7)+'-01';
+  $('#prev').disabled = st.month <= cur;
+  $('#next').disabled = st.month >= lastDay().slice(0,7)+'-01';
+}
+
+function renderSlots(){
+  if (!st.date){ $('#slotBox').classList.add('hide'); return; }
+  $('#slotBox').classList.remove('hide');
+  let slots, free;
+  if (st.kind === 'rental'){ $('#slotLabel').textContent = 'Vrijeme preuzimanja'; slots = CONFIG.PICKUP_TIMES;
+    const h = new Date().getHours(); free = st.date===todayStr() ? slots.filter(s=>parseInt(s)>h) : slots; }
+  else { $('#slotLabel').textContent = 'Termin dolaska'; slots = CONFIG.CLEANING_SLOTS; free = cleaningFree(st.busy, st.date); }
+  if (st.slot && !free.includes(st.slot)) st.slot = null;
+  $('#slotChips').innerHTML = slots.map(s => `<button class="chip ${s===st.slot?'on':''}" data-s="${s}" ${free.includes(s)?'':'disabled'}>${s}</button>`).join('');
+}
+
+function summaryLines(){
+  const L = [];
+  if (st.kind === 'rental'){
+    const o = CONFIG.RENTAL.find(r=>r.days===st.days);
+    L.push(['Usluga', `Najam mašine ${o.label} (${o.price} KM)`]);
+    L.push(['Mašina', machName(st.machine)]);
+    L.push(['Preuzimanje', `${fmt(st.date)}${st.slot?' u '+st.slot:''}`]);
+    L.push(['Vraćanje', `${fmt(addDays(st.date, st.days))}${st.slot?' do '+st.slot:''}`]);
+  } else {
+    L.push(['Usluga', 'Dubinsko pranje']);
+    if (picked().length){ L.push(['Pranje', itemsText()]); L.push(['Cijena', priceText()]); }
+    L.push(['Termin', `${fmt(st.date)}${st.slot?' u '+st.slot:''}`]);
+  }
+  return L;
+}
+
+function renderSummary(){
+  const ready = st.date && st.slot && (st.kind==='rental' || picked().length);
+  $('#sumBox').classList.toggle('hide', !st.date);
+  $('#details').classList.toggle('hide', !ready);
+  if (st.date) $('#sumBox').innerHTML = summaryLines().map(([k,v])=>`<b>${k}:</b> ${esc(v)}`).join('<br>');
+  const cleaning = st.kind === 'cleaning';
+  $('#delivWrap').classList.toggle('hide', cleaning);
+  $('#addrWrap').classList.toggle('hide', !(cleaning || $('#fDeliv').checked));
+}
+
+function renderAll(){
+  $$('#customer .tab').forEach(t => t.classList.toggle('on', t.dataset.kind===st.kind));
+  $('#rentalOpts').classList.toggle('hide', st.kind!=='rental');
+  $('#cleanOpts').classList.toggle('hide', st.kind!=='cleaning');
+  renderItems();
+  $('#machChips').innerHTML = CONFIG.MACHINE_LIST.map(m => `<button class="chip ${m.id===st.machine?'on':''}" data-m="${m.id}">${esc(m.name)}</button>`).join('');
+  $('#durChips').innerHTML = CONFIG.RENTAL.map(r => `<button class="chip ${r.days===st.days?'on':''}" data-days="${r.days}">${r.label} · ${r.price} KM</button>`).join('');
+  if (st.date && dayState(st.date) !== 'free') { st.date = null; st.slot = null; }
+  renderCal(); renderSlots(); renderSummary();
+}
+
+async function loadBusy(){
+  try { st.busy = await api.getBusy(todayStr(), addDays(lastDay(), 31)); $('#connErr').classList.add('hide'); }
+  catch(e){ console.error('Veza sa bazom:', e && (e.message || JSON.stringify(e))); $('#connErr').textContent = 'Trenutno ne možemo učitati zauzete termine. Osvježite stranicu ili nas kontaktirajte na WhatsApp/Viber. (' + (e && e.message || 'nema veze') + ')'; $('#connErr').classList.remove('hide'); }
+  renderAll();
+}
+
+$$('#customer .tab').forEach(t => t.onclick = () => { st.kind = t.dataset.kind; st.date = null; st.slot = null; renderAll(); });
+$('#durChips').onclick = e => { const b = e.target.closest('[data-days]'); if (!b) return; st.days = +b.dataset.days; renderAll(); };
+$('#cal').onclick = e => { const b = e.target.closest('[data-d]'); if (!b || b.disabled) return; st.date = b.dataset.d; renderAll(); };
+$('#slotChips').onclick = e => { const b = e.target.closest('[data-s]'); if (!b || b.disabled) return; st.slot = b.dataset.s; renderSlots(); renderSummary(); };
+$('#prev').onclick = () => { const d = toD(st.month); d.setUTCMonth(d.getUTCMonth()-1); st.month = fromD(d); renderCal(); };
+$('#next').onclick = () => { const d = toD(st.month); d.setUTCMonth(d.getUTCMonth()+1); st.month = fromD(d); renderCal(); };
+$('#fDeliv').onchange = renderSummary;
+$('#machChips').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; st.machine = b.dataset.m; renderAll(); };
+$('#items').onclick = e => { const b = e.target.closest('[data-i]'); if (!b) return; const id = b.dataset.i; st.items[id] = Math.max(0, (st.items[id]||0) + +b.dataset.d); renderItems(); renderSummary(); };
+
+$('#submit').onclick = async () => {
+  const name = $('#fName').value.trim(), phone = $('#fPhone').value.trim(), address = $('#fAddr').value.trim(), note = $('#fNote').value.trim();
+  const delivery = st.kind==='rental' && $('#fDeliv').checked;
+  const needAddr = st.kind==='cleaning' || delivery;
+  const err = !name ? 'Upišite ime i prezime.' : phone.replace(/\D/g,'').length < 6 ? 'Upišite ispravan broj telefona.' : (needAddr && !address) ? 'Upišite adresu.' : '';
+  const box = $('#formErr');
+  if (err){ box.textContent = err; box.classList.remove('hide'); return; }
+  box.classList.add('hide');
+  const btn = $('#submit'); btn.disabled = true; btn.textContent = 'Šaljem...';
+  try {
+    await api.createBooking({ kind:st.kind, machine: st.kind==='rental' ? st.machine : null, start:st.date, days:st.kind==='rental'?st.days:1, slot:st.slot, name, phone, address:needAddr?address:'', delivery, note: st.kind==='cleaning' ? `${itemsText()} · ${priceText()}${note?' · '+note:''}` : note });
+    const lines = summaryLines();
+    if (delivery) lines.push(['Dostava', address]);
+    if (st.kind==='cleaning') lines.push(['Adresa', address]);
+    lines.push(['Ime', name], ['Telefon', phone]);
+    if (note) lines.push(['Napomena', note]);
+    $('#doneSum').innerHTML = lines.map(([k,v])=>`<b>${k}:</b> ${esc(v)}`).join('<br>');
+    lastMsg = 'Zdravo! Upravo sam rezervisao/la termin preko aplikacije:\n' + lines.map(([k,v])=>`${k}: ${v}`).join('\n');
+    $('#doneWa').href = waLink(lastMsg); $('#doneVb').href = vbLink(lastMsg); $('#vbNote').classList.add('hide');
+    $('#stepForm').classList.add('hide'); $('#stepDone').classList.remove('hide');
+    window.scrollTo(0,0);
+  } catch(e){
+    box.textContent = e.message || 'Greška, pokušajte ponovo.'; box.classList.remove('hide');
+    await loadBusy();
+  } finally { btn.disabled = false; btn.textContent = 'Rezerviši termin'; }
+};
+$('#again').onclick = () => { st.date = null; st.slot = null; st.items = {}; ['#fNote'].forEach(s=>$(s).value=''); $('#stepDone').classList.add('hide'); $('#stepForm').classList.remove('hide'); loadBusy(); };
+
+/* ================= ADMIN ================= */
+let filter = 'all', bookings = [];
+const STATUS = { pending:'Na čekanju', confirmed:'Potvrđeno', cancelled:'Otkazano', blocked:'Zauzeto (ručno)' };
+
+function renderList(){
+  const pend = bookings.filter(b=>b.status==='pending').length;
+  $('#pendCount').textContent = pend ? `(${pend})` : '';
+  const rows = bookings.filter(b => filter==='all' ? true : b.status==='pending');
+  if (!rows.length){ $('#list').innerHTML = '<p class="muted" style="margin-top:14px">Nema rezervacija.</p>'; return; }
+  let h = '', last = '';
+  for (const b of rows){
+    if (b.start_date !== last){ h += `<div class="date-h">${fmtLong(b.start_date)}</div>`; last = b.start_date; }
+    const days = Math.round((toD(b.end_date)-toD(b.start_date))/864e5);
+    const what = b.kind==='rental'
+      ? `🧽 ${esc(machName(b.machine))} · ${days} ${days===1?'dan':'dana'} · ${b.slot && b.slot!=='*'?'preuzimanje '+b.slot:''}<br><span class="muted">vraćanje ${fmt(b.end_date)}</span>`
+      : `🏠 Dubinsko pranje · ${b.slot==='*'?'cijeli dan':b.slot}`;
+    const tel = (b.phone||'').replace(/[^\d+]/g,'');
+    const waNum = tel.startsWith('+') ? tel.slice(1) : tel.startsWith('0') ? '387'+tel.slice(1) : tel;
+    h += `<div class="bk"><div class="bk-top"><div><b>${esc(b.name||'—')}</b><br>${what}</div><span class="badge b-${b.status}">${STATUS[b.status]||b.status}</span></div>`;
+    if (b.address) h += `<div class="muted" style="margin-top:6px">📍 ${b.delivery?'Dostava: ':''}${esc(b.address)}</div>`;
+    if (b.note) h += `<div class="muted" style="margin-top:4px">📝 ${esc(b.note)}</div>`;
+    h += `<div class="acts">`;
+    if (tel) h += `<a href="tel:${esc(tel)}">📞 Pozovi</a><a href="https://wa.me/${esc(waNum)}" target="_blank" rel="noopener">WhatsApp</a>`;
+    if (b.status==='pending') h += `<button class="g" data-a="confirmed" data-id="${b.id}">Potvrdi</button>`;
+    if (b.status==='pending'||b.status==='confirmed') h += `<button class="r" data-a="cancelled" data-id="${b.id}">Otkaži</button>`;
+    if (b.status==='cancelled'||b.status==='blocked') h += `<button class="r" data-a="delete" data-id="${b.id}">Obriši</button>`;
+    h += `</div></div>`;
+  }
+  $('#list').innerHTML = h;
+}
+
+async function loadList(){
+  try { bookings = await api.list(); renderList(); }
+  catch(e){ $('#list').innerHTML = `<div class="err">Greška pri učitavanju: ${esc(e.message)}</div>`; }
+}
+
+async function showAdmin(){
+  $('#customer').classList.add('hide'); $('#admin').classList.remove('hide');
+  $('#hSub').textContent = 'Upravljanje terminima';
+  const ok = await api.session();
+  $('#loginCard').classList.toggle('hide', ok); $('#panel').classList.toggle('hide', !ok);
+  if (ok) loadList();
+}
+function showCustomer(){
+  $('#admin').classList.add('hide'); $('#customer').classList.remove('hide');
+  $('#hSub').textContent = 'Rezervacija termina · Prijedor';
+  loadBusy();
+}
+function route(){ (location.hash === '#admin') ? showAdmin() : showCustomer(); }
+
+$('#loginBtn').onclick = async () => {
+  const e = $('#loginErr'); e.classList.add('hide');
+  try { await api.signIn($('#aEmail').value.trim(), $('#aPass').value); if (DEMO) sessionStorageSet('demoAdmin','1'); route(); }
+  catch(err){ e.textContent = err.message; e.classList.remove('hide'); }
+};
+$('#logout').onclick = async () => { await api.signOut(); route(); };
+$('#refresh').onclick = loadList;
+$$('#panel .tab').forEach(t => t.onclick = () => { filter = t.dataset.f; $$('#panel .tab').forEach(x=>x.classList.toggle('on', x===t)); renderList(); });
+$('#list').onclick = async e => {
+  const b = e.target.closest('[data-a]'); if (!b) return;
+  const a = b.dataset.a, id = b.dataset.id;
+  if (a==='delete'){ if (!confirm('Obrisati ovaj unos?')) return; await api.remove(id); }
+  else { if (a==='cancelled' && !confirm('Otkazati rezervaciju? Termin će ponovo biti slobodan.')) return; await api.setStatus(id, a); }
+  loadList();
+};
+
+$('#blSlot').innerHTML = `<option value="*">Cijeli dan</option>` + CONFIG.CLEANING_SLOTS.map(s=>`<option>${s}</option>`).join('');
+$('#blMach').innerHTML = CONFIG.MACHINE_LIST.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('') + `<option value="*">Obje mašine</option>`;
+$('#blDate').value = todayStr();
+$('#blKind').onchange = () => { const r = $('#blKind').value==='rental'; $('#blRental').classList.toggle('hide',!r); $('#blCleaning').classList.toggle('hide',r); };
+$('#blBtn').onclick = async () => {
+  const kind = $('#blKind').value, start = $('#blDate').value, e = $('#blErr');
+  e.classList.add('hide');
+  if (!start){ e.textContent='Izaberi datum.'; e.classList.remove('hide'); return; }
+  const days = Math.max(1, +$('#blDays').value||1);
+  const row = { kind, start_date:start, end_date:addDays(start, kind==='rental'?days:1), slot: kind==='rental' ? null : $('#blSlot').value,
+    machine: kind==='rental' ? $('#blMach').value : null, machines: 1, name: $('#blNote').value.trim() || (kind==='rental'?'Mašina zauzeta':'Dubinsko pranje'), status:'blocked' };
+  try { await api.addBlock(row); $('#blNote').value=''; loadList(); }
+  catch(err){ e.textContent = err.message; e.classList.remove('hide'); }
+};
+
+/* ---------- start ---------- */
+st.month = todayStr().slice(0,7)+'-01';
+const waGeneral = waLink('Zdravo! Imam pitanje u vezi najma mašine.');
+$('#footWa').href = waGeneral; $('#footVb').href = vbLink(''); $('#yr').textContent = new Date().getFullYear();
+$('#doneVb').addEventListener('click', () => { try { navigator.clipboard.writeText(lastMsg); } catch(e){} $('#vbNote').classList.remove('hide'); }); $('#waMore').href = waLink('Zdravo! Treba mi mašina na više od 3 dana.');
+if (DEMO){ $('#demoBar').classList.remove('hide'); $$('.demoOnly').forEach(x=>x.classList.remove('hide')); }
+window.addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
